@@ -5,14 +5,16 @@
 -- Created by: Amin Zeina
 -- Created on: Apr 2018
 --
--- Explosion
+-- adding spritesheets to physics
 -----------------------------------------------------------------------------------------
+
+display.setStatusBar(display.HiddenStatusBar)
 
 local physics = require( "physics" )
 
 physics.start()
 physics.setGravity( 0, 25 )
-physics.setDrawMode( "hybrid" )
+physics.setDrawMode( "default" )
 
 local playerBullets = {} -- table for bullets
 local score = 0
@@ -43,30 +45,7 @@ physics.addBody( leftWall, "static", {
     } )
 leftWall.id = "Left Wall"
 
-local rightArrow = display.newImageRect( "./assets/sprites/arrow.png", 200, 200 )
-rightArrow.x = 400
-rightArrow.y = display.contentHeight - 150
-rightArrow.id = "right arrow"
-rightArrow.alpha = 0.7
-
-local leftArrow = display.newImageRect( "./assets/sprites/arrow.png", 200, 200 )
-leftArrow.x = 150
-leftArrow.y = display.contentHeight - 150
-leftArrow.id = "left arrow"
-leftArrow.xScale = -1
-leftArrow.alpha = 0.7
-
-local jumpButton = display.newImage( "./assets/sprites/jumpButton.png" )
-jumpButton.x = display.contentWidth - 80
-jumpButton.y = display.contentHeight - 100
-jumpButton.id = "jump button"
-jumpButton.alpha = 0.5
-
-local shootButton = display.newImage( "./assets/sprites/jumpButton.png" )
-shootButton.x = display.contentWidth - 250
-shootButton.y = display.contentHeight - 100
-shootButton.id = "shootButton"
-shootButton.alpha = 0.5
+local scoreText = display.newText( 'Score:', 200, 100, native.systemFont, 128 )
 
 local sheetOptionsIdleBoy = {
     width = 232,
@@ -186,6 +165,7 @@ local ninjaGirl = display.newSprite( sheetIdleNinjaGirl, sequence_data)
 ninjaGirl.x = display.contentCenterX 
 ninjaGirl.y = display.contentCenterY
 ninjaGirl.id = "enemy character"
+ninjaGirl.xScale = -1
 physics.addBody( ninjaGirl, "dynamic", { 
     density = 3.0, 
     friction = 0.5, 
@@ -194,6 +174,31 @@ physics.addBody( ninjaGirl, "dynamic", {
 ninjaGirl.isFixedRotation = true
 ninjaGirl:setSequence( "idleGirl")
 ninjaGirl:play()
+
+local rightArrow = display.newImageRect( "./assets/sprites/arrow.png", 200, 200 )
+rightArrow.x = 400
+rightArrow.y = display.contentHeight - 150
+rightArrow.id = "right arrow"
+rightArrow.alpha = 0.7
+
+local leftArrow = display.newImageRect( "./assets/sprites/arrow.png", 200, 200 )
+leftArrow.x = 150
+leftArrow.y = display.contentHeight - 150
+leftArrow.id = "left arrow"
+leftArrow.xScale = -1
+leftArrow.alpha = 0.7
+
+local jumpButton = display.newImage( "./assets/sprites/jumpButton.png" )
+jumpButton.x = display.contentWidth - 80
+jumpButton.y = display.contentHeight - 100
+jumpButton.id = "jump button"
+jumpButton.alpha = 0.5
+
+local shootButton = display.newImage( "./assets/sprites/jumpButton.png" )
+shootButton.x = display.contentWidth - 250
+shootButton.y = display.contentHeight - 100
+shootButton.id = "shootButton"
+shootButton.alpha = 0.5
 
 local function resetIdleBoy( event )
     if (event.phase == 'ended') then
@@ -303,7 +308,7 @@ local function onCollision( event )
                 ninjaGirl = nil
             end
 
-            timer.performWithDelay( 1300, removeNinjaGirl )
+            timer.performWithDelay( 1200, removeNinjaGirl )
 
             -- Increase score
             score = score + 1 
@@ -316,9 +321,17 @@ local function onCollision( event )
     end
 end
 
+
+local function checkScore( event )
+    if score > 0 then
+        local scoreNumberText = display.newText( score, 450, 100, native.systemFont, 128 )
+    end
+end
+
 function rightArrow:touch( event )
     if ( event.phase == "ended" ) then 
         -- moves ninja Boy right 
+        ninjaBoy.xScale = 1
         transition.moveBy( ninjaBoy, {
             x = 100, --move 100 pixels right
             y = 0, -- move 0 pixels vertically
@@ -327,18 +340,21 @@ function rightArrow:touch( event )
         ninjaBoy:setSequence( "runBoy")
         ninjaBoy:play()
     end
+
+    return true
 end
 
 function leftArrow:touch( event )
     if ( event.phase == "ended" ) then
-        -- Turns Character
-        ninjaBoy.xScale = -1
         -- moves character left
+        ninjaBoy.xScale = -1
         transition.moveBy( ninjaBoy, { 
-            x = - 50, -- move 50 pixels left
+            x = - 100, -- move 100 pixels left
             y = 0, -- move 0 pixels vertically
-            time = 100 -- move in 100 milliseconds
+            time = timeOfAnimation -- move as long as animation
             } )
+        ninjaBoy:setSequence( "runBoy" )
+        ninjaBoy:play()
     end
 
     return true
@@ -374,11 +390,12 @@ function shootButton:touch( event )
             table.insert(playerBullets,aSingleBullet)
             print("# of bullet: " .. tostring(#playerBullets))    
         end 
-
+        timer.performWithDelay( 200, delayThrow )
         
         ninjaBoy:setSequence( "throwBoy")
         ninjaBoy:play()
     end
+
     return true
 end
 
@@ -392,6 +409,6 @@ ninjaBoy:addEventListener( 'collision')
 
 Runtime:addEventListener( "enterFrame", checkCharacterPosition )
 Runtime:addEventListener( "enterFrame", checkPlayerBulletsOutOfBounds )
-Runtime:addEventListener( "collision", onCollision)
-
+Runtime:addEventListener( "collision", onCollision )
+Runtime:addEventListener( "enterFrame", checkScore )
 ninjaBoy:addEventListener( "sprite", resetIdleBoy )
